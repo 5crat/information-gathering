@@ -96,26 +96,26 @@ class DB():
         self.cur.execute(sql)
         return self.cur.fetchall()
 
-    def select(self, condition):
+    def select(self, condition={}, field=('*')):
         """
         select data
         :param condition:
         :return result:
         """
-        condition = self._param(condition)
-        print "select * from "+self.__table+" where "+condition['key']+"=%s" % condition['value'][0]
-        self.cur.execute("select * from "+self.__table+" where "+condition['key']+"=%s", condition['value'][0])
+        if type(()) is type(field):
+            field = self._param(field)
+        else:
+            field = ('*')
+        sql = 'select %s from %s' % (field, self.__table)
+        args = []
+        if condition:
+            condition = self._param(condition)
+            sql += ' where %s=' % condition['key']
+            sql += '%s'
+            args.append([condition['value'][0]])
+        self.cur.execute(sql, args)
         return self.cur.fetchall()
 
-    def select_all(self, field):
-        """
-        select all data
-        :param field:
-        :return result:
-        """
-        fields = self._param(field)
-        self.cur.execute('select '+fields+' from '+self.__table)
-        return self.cur.fetchall()
 
     def insert(self, field):
         """
@@ -173,11 +173,10 @@ class DB():
 if __name__ == '__main__':
     t = {'hehe': 1, 'haha': 2, 'xixi': 3, 'woca': 4}
     h = DB(db_type='mysql', username='root', password='', host='localhost', db_name='bank')
-    h.execute('show tables')
-    h.close()
-    exit()
+
     h.set_table('host')
-    #h.select({'bank_id': '33'})
+    a=h.select()
+    print a
     #h.insert({'ip': '123', 'bank_id': '555', 'web_status_code': '300'})
     #h.update({'web_status_code': '200', 'ip': '123'}, {'bank_id': '=555'})
     #h.delete({'bank_id': '=555'})
