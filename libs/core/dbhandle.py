@@ -100,6 +100,7 @@ class DB():
         """
         select data
         :param condition:
+        :param field
         :return result:
         """
         if type(()) is type(field):
@@ -157,9 +158,17 @@ class DB():
             return False
 
     def delete(self, condition):
-        con = self._param(condition)
+        """
+        delete
+        :param condition:
+        :return:
+        """
+        condition = self._param(condition)
+        sql = 'delete from %s where %s=' % (self.__table, condition['key'])
+        sql += '%s'
+        args = [condition['value'][0]]
         try:
-            self.cur.execute('delete from '+self.__table+' where '+con['key']+con['value'][0])
+            self.cur.execute(sql, args)
             self.conn.commit()
             return True
         except Exception as e:
