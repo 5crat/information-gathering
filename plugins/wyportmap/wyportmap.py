@@ -10,7 +10,6 @@ from plugins.wyportmap.libnmap.parser import NmapParser
 
 # 重试次数 & 超时时间(s)
 retrycnt = 3
-#timeout = 30
 timeout = 3600
 scanPort = '21-25,80-89,110,111,143,161,210,389,443,513,873,1080,1352,1433,1521,1158,2601,2604,3128,3306-3308,3389,3690,3700,4440,4848,5000,5432,5632,5900-5902,6379,7001,8000-8090,8888,9200,9300,9080-9090,9999-10001,9000,9418,27017-27019,50060,11211,2049'
 
@@ -71,7 +70,6 @@ def parse_nmap_report(nmap_stdout, taskid=None):
         nmap_report = NmapParser.parse(nmap_stdout)
         # host.address
         hd = ''
-        portInfo = []
         # 开始处理扫描结果
         for host in nmap_report.hosts:
 
@@ -79,6 +77,7 @@ def parse_nmap_report(nmap_stdout, taskid=None):
             host.taskid = taskid
             hd = host.address
             # 处理主机开放的服务和端口
+            portInfo = []
             for serv in host.services:
                 serv.address = host.address
                 serv.taskid = taskid
@@ -86,9 +85,10 @@ def parse_nmap_report(nmap_stdout, taskid=None):
                 if serv.state in global_log_states:
                     p = re.findall('\[(.*)\]', str(serv))
                     portInfo.append(p[0])
+            result[hd] = portInfo
             #print {host.address: portInfo}
         #print '* Scan finished'
-        return {hd: portInfo}
+        return result
 
     except Exception, e:
         # 处理报表出错，返回错误结果
@@ -102,11 +102,14 @@ def run_wyportmap(targets, taskid=None, DB=None):
     nmap_result = do_nmap_scan(targets)
     print '-' * 50
     result = parse_nmap_report(nmap_result, taskid)
-    save_port_info(result, DB)
+    print result
+    if save_port_info(result, DB):
+        return True
+    else:
+        return False
 
 
 def save_port_info(result, DB):
-    print result
     if result is None or DB is None:
         return False
     for ip in result:
@@ -116,7 +119,7 @@ def save_port_info(result, DB):
         for port in result[ip]:
             ports += port+'|||'
         data['port'] = ports.rstrip("|||")
-        #print data
+        print data
 
         if DB.insert(data):
             return True
@@ -124,6 +127,7 @@ def save_port_info(result, DB):
             return False
 
 if __name__ == "__main__":
+
     if len(sys.argv) == 2:
         run_wyportmap(sys.argv[1])
         sys.exit(0)
