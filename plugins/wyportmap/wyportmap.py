@@ -5,6 +5,7 @@
 import re
 import sys
 from time import sleep
+from libs.core.data import logger
 from plugins.wyportmap.libnmap.process import NmapProcess
 from plugins.wyportmap.libnmap.parser import NmapParser
 
@@ -28,6 +29,7 @@ def do_nmap_scan(targets, options=global_options):
         runtime = 0
 
         if trycnt >= retrycnt:
+            logger.warning('nmap retrycnt > 3(重试次数)')
             print '-' * 50
             return 'retry overflow'
 
@@ -37,6 +39,7 @@ def do_nmap_scan(targets, options=global_options):
 
             while nmap_proc.is_running():
                 if runtime >= timeout:  # 运行超时，结束掉任务，休息1分钟, 再重启这个nmap任务
+                    logger.warning('nmap scan timeout')
                     print '-' * 50
                     print "* timeout. terminate it..."
                     nmap_proc.stop()
@@ -58,6 +61,7 @@ def do_nmap_scan(targets, options=global_options):
             print e
             trycnt += 1
             if trycnt >= retrycnt:
+                logger.warning('nmap retrycnt > 3(重试次数)')
                 print '-' * 50
                 print '* retry overflow'
                 return e
@@ -91,18 +95,18 @@ def parse_nmap_report(nmap_stdout, taskid=None):
         return result
 
     except Exception, e:
+        logger.error('parse nmap report error')
         # 处理报表出错，返回错误结果
         return e
 
 
-def run_wyportmap(targets, taskid=None, DB=None):
+def run_wyportmap(targets, DB=None, taskid=None):
     print '-' * 50
     print '* Starting id:(%s) [%s] portmap scan' % (taskid, targets)
     print '-' * 50
     nmap_result = do_nmap_scan(targets)
     print '-' * 50
     result = parse_nmap_report(nmap_result, taskid)
-    print result
     if save_port_info(result, DB):
         return True
     else:
@@ -119,12 +123,19 @@ def save_port_info(result, DB):
         for port in result[ip]:
             ports += port+'|||'
         data['port'] = ports.rstrip("|||")
-        print data
-
-        if DB.insert(data):
-            return True
-        else:
-            return False
+        if data:
+            if DB.check_exist({'ip': data['ip']}) is False:
+                if DB.insert(data):
+                    sql = 'update gun_domains set status=1 where ip like "%'+data['ip']+'%"'
+                    print(sql)
+                    DB.execute(sql)
+                    print '[ + ] Insert Success: ' + str(result)
+                else:
+                    logger.error('nmap result insert db error')
+                    print '[ - ] Insert Failed: ' + str(result)
+            else:
+                logger.warning('nmap result insert data was existed')
+                print '[ ! ] Data Was Existed: ' + str(result)
 
 if __name__ == "__main__":
 

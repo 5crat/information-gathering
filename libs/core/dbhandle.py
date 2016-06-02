@@ -5,7 +5,7 @@
 
 import MySQLdb
 import sqlite3
-
+from libs.core.data import logger
 
 class DB():
     def __init__(self, db_type, db_name='', username='', password='', host='localhost', port=3306, charset='utf8'):
@@ -93,8 +93,12 @@ class DB():
         :param sql:
         :return:
         """
-        self.cur.execute(sql)
-        return self.cur.fetchall()
+        try:
+            self.cur.execute(sql)
+            return self.cur.fetchall()
+        except Exception as e:
+            logger.error(e)
+            return False
 
     def select(self, condition={}, field=('*')):
         """
@@ -128,12 +132,11 @@ class DB():
         n = len(fields['value'])
         try:
             sql = 'insert into '+self.__table+' ('+fields['key']+') values('+(n*'%s,').rstrip(',')+')'
-            #print sql
             self.cur.execute(sql, fields['value'])
             self.conn.commit()
             return True
         except Exception as e:
-            print e
+            logger.error(e)
             return False
 
     def update(self, field, condition):
@@ -154,7 +157,7 @@ class DB():
             self.conn.commit()
             return True
         except Exception as e:
-            print e
+            logger.error(e)
             return False
 
     def delete(self, condition):
@@ -172,10 +175,26 @@ class DB():
             self.conn.commit()
             return True
         except Exception as e:
-            print e
+            logger.error(e)
+            return False
+
+    def check_exist(self, condition):
+        """
+        existed : True
+        no exist: False
+        :param condition:
+        :return: bool
+        """
+        if self.select(condition=condition):
+            return True
+        else:
             return False
 
     def close(self):
+        """
+        close DB
+        :return:
+        """
         self.cur.close()
         self.conn.close()
 

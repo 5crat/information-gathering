@@ -4,7 +4,7 @@
 
 from Queue import Queue
 from datatype import AttribDict
-#from lib.core.log import LOGGER
+from libs.core.log import LOGGER
 
 #PATH
 paths = AttribDict()
@@ -16,4 +16,4 @@ domainQueue = Queue()
 ipQueue = Queue()
 
 #log
-#logger = LOGGER
+logger = LOGGER

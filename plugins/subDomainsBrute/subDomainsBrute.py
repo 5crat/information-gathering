@@ -10,7 +10,8 @@ import sys
 import dns.resolver
 import threading
 from time import time, sleep
-from libs.core.data import paths
+from libs.core.data import paths, logger
+
 
 
 class DNSBrute:
@@ -27,33 +28,44 @@ class DNSBrute:
         self._load_next_sub()
         self.ip_dict = {}
 
-
-
     def _load_dns_servers(self):
         dns_servers = []
-        with open(paths.ROOT_PATH + '/plugins/subDomainsBrute/dns_servers.txt') as f:
-            for line in f:
-                server = line.strip()
-                if server.count('.') == 3 and server not in dns_servers:
-                    dns_servers.append(server)
-        self.dns_servers = dns_servers
-        self.dns_count = len(dns_servers)
+        try:
+            with open(paths.ROOT_PATH + '/plugins/subDomainsBrute/dns_servers.txt') as f:
+                for line in f:
+                    server = line.strip()
+                    if server.count('.') == 3 and server not in dns_servers:
+                        dns_servers.append(server)
+            self.dns_servers = dns_servers
+            self.dns_count = len(dns_servers)
+        except Exception as e:
+            logger.error(e)
+            print e
 
     def _load_sub_names(self):
         self.queue = Queue.Queue()
-        with open(paths.ROOT_PATH + '/plugins/subDomainsBrute/' + self.names_file) as f:
-            for line in f:
-                sub = line.strip()
-                if sub: self.queue.put(sub)
+        try:
+            with open(paths.ROOT_PATH + '/plugins/subDomainsBrute/' + self.names_file) as f:
+                for line in f:
+                    sub = line.strip()
+                    if sub:
+                        self.queue.put(sub)
+        except Exception as e:
+            logger.error(e)
+            print e
 
     def _load_next_sub(self):
         next_subs = []
-        with open(paths.ROOT_PATH + '/plugins/subDomainsBrute/next_sub.txt') as f:
-            for line in f:
-                sub = line.strip()
-                if sub and sub not in next_subs:
-                    next_subs.append(sub)
-        self.next_subs = next_subs
+        try:
+            with open(paths.ROOT_PATH + '/plugins/subDomainsBrute/next_sub.txt') as f:
+                for line in f:
+                    sub = line.strip()
+                    if sub and sub not in next_subs:
+                        next_subs.append(sub)
+            self.next_subs = next_subs
+        except Exception as e:
+            logger.error(e)
+            print e
 
     def _update_scan_count(self):
         self.lock.acquire()
@@ -96,6 +108,7 @@ class DNSBrute:
                     for i in self.next_subs:
                         self.queue.put(i + '.' + sub)
             except Exception, e:
+                logger.error(e)
                 print e
             self._update_scan_count()
         self.lock.acquire()
