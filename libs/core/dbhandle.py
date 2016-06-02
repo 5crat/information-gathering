@@ -150,7 +150,7 @@ class DB():
         for param in params:
             p += param + '=%s,'
         try:
-            self.cur.execute('update '+self.__table+' set '+p.rstrip(',')+' where '+con['key']+con['value'][0], fields['value'])
+            self.cur.execute('update '+self.__table+' set '+p.rstrip(',')+' where '+con['key']+'='+con['value'][0], fields['value'])
             self.conn.commit()
             return True
         except Exception as e:
@@ -181,13 +181,12 @@ class DB():
 
 if __name__ == '__main__':
     t = {'hehe': 1, 'haha': 2, 'xixi': 3, 'woca': 4}
-    h = DB(db_type='mysql', username='root', password='', host='localhost', db_name='bank')
+    h = DB(db_type='mysql', username='root', password='password', host='localhost', db_name='bank')
 
     h.set_table('host')
-    a=h.select()
+    a=h.select({'id': 1})
+    #a=h.insert({'ip': '123', 'bank_id': '555'})
+    #a=h.update({'ip': '123.456.789'}, {'id': '2'})
+    #a=h.delete({'id': '2'})
     print a
-    #h.insert({'ip': '123', 'bank_id': '555', 'web_status_code': '300'})
-    #h.update({'web_status_code': '200', 'ip': '123'}, {'bank_id': '=555'})
-    #h.delete({'bank_id': '=555'})
-
     h.close()
